@@ -23,7 +23,7 @@ COPYFILE_DISABLE=1 tar --no-xattrs -czf - -C dist . | ssh "$HOST" "
   rm -rf $WEB.old
 "
 
-# Сервер комнат — один файл без node_modules. Перезапуск сбрасывает открытые комнаты,
+# Сервер комнат — один файл без node_modules. Перед перезапуском он сохраняет комнаты в базу,
 # клиенты переподключатся сами и заново займут места
 scp -q dist-server/index.cjs "$HOST:$APP/index.cjs.new"
 ssh "$HOST" "mv $APP/index.cjs.new $APP/index.cjs && systemctl restart planpoker && sleep 1 && curl -fsS http://127.0.0.1:8787/health"

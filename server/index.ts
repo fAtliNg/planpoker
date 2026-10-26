@@ -1,6 +1,7 @@
 import { createServer } from 'node:http'
 import { WebSocketServer } from 'ws'
-import { attach, startSweeper, stats } from './rooms.ts'
+import { attach, flushAll, startSweeper, stats } from './rooms.ts'
+import { closeStorage, storedRoomsCount } from './storage.ts'
 
 /**
  * Сервер комнат: только WebSocket на /ws и /health для проверки.
@@ -12,7 +13,7 @@ const HOST = process.env.HOST ?? '127.0.0.1'
 const server = createServer((req, res) => {
   if (req.url === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' })
-    res.end(JSON.stringify({ ok: true, ...stats() }))
+    res.end(JSON.stringify({ ok: true, ...stats(), stored: storedRoomsCount() }))
     return
   }
   res.writeHead(404)
@@ -35,4 +36,14 @@ wss.on('connection', (socket) => {
 })
 
 startSweeper()
+
+// systemd останавливает сервис SIGTERM: дописываем несохранённые комнаты в базу
+function shutdown() {
+  flushAll()
+  closeStorage()
+  process.exit(0)
+}
+process.on('SIGTERM', shutdown)
+process.on('SIGINT', shutdown)
+
 server.listen(PORT, HOST, () => console.log(`planpoker: ws://${HOST}:${PORT}/ws`))

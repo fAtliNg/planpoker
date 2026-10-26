@@ -16,18 +16,20 @@ https://planpoker.denisenkosergey.ru
 ## Стек
 
 - Клиент: React 19, TypeScript, Vite 7, React Router 7, CSS Modules.
-- Сервер: Node.js 22 + [`ws`](https://github.com/websockets/ws). Комнаты живут в памяти и удаляются через 2 часа после ухода всех участников.
+- Сервер: Node.js 22 + [`ws`](https://github.com/websockets/ws). Активные комнаты живут в памяти и сохраняются в SQLite (встроенный `node:sqlite`): голоса, задачи и история переживают перезапуск сервера, к комнате можно вернуться по ссылке. Комнаты без активности удаляются через 30 дней.
 - Общие типы протокола и подсчёт итогов — в `shared/protocol.ts`.
 
 ```bash
 npm install
-npm run dev     # клиент на :5173 и сервер комнат на :8787 (Vite проксирует /ws)
+npm run dev     # клиент на :5173 и сервер комнат на :8787 (Vite проксирует /ws), база в ./data
 npm run build   # dist/ — статика, dist-server/index.cjs — сервер одним файлом
 ```
 
 ## Деплой
 
-Сервер denisenkosergey.ru: nginx отдаёт статику и проксирует `/ws` на `127.0.0.1:8787`, сервер комнат — systemd-сервис `planpoker`.
+Сервер denisenkosergey.ru: nginx отдаёт статику и проксирует `/ws` на `127.0.0.1:8787`, сервер комнат — systemd-сервис `planpoker`, база — `/var/lib/planpoker/planpoker.db`.
 
 1. Один раз: `./deploy/setup-server.sh` — ставит Node.js в `/opt/node`, systemd-юнит, конфиг nginx и сертификат.
-2. Выкладка: `./deploy/deploy.sh` — собирает проект, подменяет статику и перезапускает сервис.
+2. Выкладка: `./deploy/deploy.sh` — собирает проект, подменяет статику и перезапускает сервис. Комнаты при перезапуске сохраняются в базу, участники переподключаются сами.
+
+После изменения `deploy/planpoker.service` повторите `./deploy/setup-server.sh`: он обновит юнит, остальное пропустит.

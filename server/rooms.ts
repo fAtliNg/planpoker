@@ -10,6 +10,7 @@ import {
   type RoundResult,
   type ServerMessage,
 } from '../shared/protocol.ts'
+import { deleteStaleRooms, loadRoom, saveRoom, type StoredRoom } from './storage.ts'
 
 interface Member {
   /** Публичный id: его видят остальные. clientId знает только сам участник */
@@ -34,6 +35,7 @@ interface Room {
   timerEndsAt: number | null
   timer: NodeJS.Timeout | null
   emptySince: number | null
+  saveTimer: NodeJS.Timeout | null
 }
 
 const MAX_ROOMS = 2000
@@ -56,7 +58,78 @@ function createRoom(id: string): Room {
     timerEndsAt: null,
     timer: null,
     emptySince: null,
+    saveTimer: null,
   }
+}
+
+function toStored(room: Room): StoredRoom {
+  const members: StoredRoom['members'] = {}
+  room.members.forEach((m, clientId) => {
+    members[clientId] = { id: m.id, name: m.name, spectator: m.spectator, vote: m.vote, joinedAt: m.joinedAt }
+  })
+  return {
+    id: room.id,
+    deckId: room.deckId,
+    cards: room.cards,
+    story: room.story,
+    revealed: room.revealed,
+    hostKey: room.hostKey,
+    members,
+    history: room.history,
+    timerEndsAt: room.timerEndsAt,
+  }
+}
+
+function fromStored(stored: StoredRoom): Room {
+  const room = createRoom(stored.id)
+  const now = Date.now()
+  Object.assign(room, {
+    deckId: stored.deckId,
+    cards: stored.cards,
+    story: stored.story,
+    revealed: stored.revealed,
+    hostKey: stored.hostKey,
+    history: stored.history,
+    emptySince: now,
+  })
+  for (const [clientId, m] of Object.entries(stored.members)) {
+    room.members.set(clientId, { ...m, sockets: new Set(), offlineSince: now })
+  }
+  // Таймер, который шёл до перезапуска: досчитываем или сразу вскрываем карты
+  if (stored.timerEndsAt) {
+    if (stored.timerEndsAt <= now) room.revealed = true
+    else startTimer(room, stored.timerEndsAt)
+  }
+  return room
+}
+
+/** Комната из памяти или из базы; новая создаётся, только если create */
+function getRoom(id: string, create: boolean): Room | null {
+  let room = rooms.get(id)
+  if (room) return room
+  if (rooms.size >= MAX_ROOMS) return null
+  const stored = loadRoom(id)
+  if (stored) room = fromStored(stored)
+  else if (create) room = createRoom(id)
+  else return null
+  rooms.set(id, room)
+  return room
+}
+
+/** Запись в базу с небольшой задержкой: серия кликов сохраняется одной записью */
+function scheduleSave(room: Room) {
+  if (room.saveTimer) return
+  room.saveTimer = setTimeout(() => flush(room), 500)
+}
+
+function flush(room: Room) {
+  if (room.saveTimer) clearTimeout(room.saveTimer)
+  room.saveTimer = null
+  saveRoom(toStored(room))
+}
+
+export function flushAll() {
+  rooms.forEach((room) => room.saveTimer && flush(room))
 }
 
 function online(member: Member) {
@@ -101,6 +174,7 @@ function send(socket: WebSocket, message: ServerMessage) {
 }
 
 function broadcast(room: Room) {
+  scheduleSave(room)
   const state = snapshot(room)
   for (const member of room.members.values()) {
     for (const socket of member.sockets) send(socket, { type: 'state', room: state, you: member.id, myVote: member.vote })
@@ -111,6 +185,15 @@ function clearTimer(room: Room) {
   if (room.timer) clearTimeout(room.timer)
   room.timer = null
   room.timerEndsAt = null
+}
+
+function startTimer(room: Room, endsAt: number) {
+  room.timerEndsAt = endsAt
+  // По истечении времени карты вскрываются сами
+  room.timer = setTimeout(() => {
+    reveal(room)
+    broadcast(room)
+  }, endsAt - Date.now())
 }
 
 function reveal(room: Room) {
@@ -165,14 +248,10 @@ export function attach(socket: WebSocket) {
         send(socket, { type: 'error', message: 'Не удалось войти в комнату' })
         return
       }
-      let target = rooms.get(roomId)
+      const target = getRoom(roomId, true)
       if (!target) {
-        if (rooms.size >= MAX_ROOMS) {
-          send(socket, { type: 'error', message: 'Сервер перегружен, попробуйте позже' })
-          return
-        }
-        target = createRoom(roomId)
-        rooms.set(roomId, target)
+        send(socket, { type: 'error', message: 'Сервер перегружен, попробуйте позже' })
+        return
       }
       let member = target.members.get(clientId)
       if (!member) {
@@ -251,13 +330,7 @@ export function attach(socket: WebSocket) {
         clearTimer(room)
         const seconds = message.seconds
         if (seconds != null && Number.isFinite(seconds) && seconds >= 10 && seconds <= 900) {
-          const target = room
-          room.timerEndsAt = Date.now() + seconds * 1000
-          // По истечении времени карты вскрываются сами
-          room.timer = setTimeout(() => {
-            reveal(target)
-            broadcast(target)
-          }, seconds * 1000)
+          startTimer(room, Date.now() + seconds * 1000)
         }
         break
       }
@@ -287,20 +360,27 @@ export function attach(socket: WebSocket) {
   })
 }
 
-/** Раз в минуту убираем давно ушедших участников и пустые комнаты */
+/**
+ * Раз в минуту убираем со стола давно ушедших участников (их голос текущего раунда сохраняется)
+ * и выгружаем из памяти пустые комнаты — они остаются в базе. Раз в час чистим базу.
+ */
 export function startSweeper() {
+  let minutes = 0
   return setInterval(() => {
     const now = Date.now()
+    if (minutes++ % 60 === 0) deleteStaleRooms(LIMITS.storedRoomDays * 24 * 60 * 60_000)
     for (const room of rooms.values()) {
       let changed = false
       for (const [clientId, member] of room.members) {
-        if (member.offlineSince && now - member.offlineSince > LIMITS.offlineMs) {
+        if (member.offlineSince && member.vote == null && now - member.offlineSince > LIMITS.offlineMs) {
           room.members.delete(clientId)
           changed = true
         }
       }
       if (room.emptySince && now - room.emptySince > LIMITS.emptyRoomMs) {
-        clearTimer(room)
+        // Сначала сохраняем: незавершённый таймер должен пережить выгрузку
+        flush(room)
+        if (room.timer) clearTimeout(room.timer)
         rooms.delete(room.id)
         continue
       }

@@ -5,8 +5,8 @@ export default function Footer() {
     <footer className={styles.footer}>
       <div className={`container ${styles.inner}`}>
         <p>
-          Комнаты не требуют регистрации и удаляются через пару часов после того, как все вышли. Оценки не сохраняются
-          на сервере дольше жизни комнаты.
+          Комнаты не требуют регистрации. Голоса и история сохраняются: к комнате можно вернуться по той же ссылке.
+          Комната удаляется через 30 дней без активности.
         </p>
         <p className={styles.meta}>
           © {new Date().getFullYear()} PlanPoker ·{' '}

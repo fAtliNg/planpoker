@@ -11,10 +11,14 @@ WorkingDirectory=/opt/planpoker
 Environment=NODE_ENV=production
 Environment=PORT=8787
 Environment=HOST=127.0.0.1
-ExecStart=/opt/node/bin/node /opt/planpoker/index.cjs
+# База комнат: systemd создаёт /var/lib/planpoker и даёт сервису право писать туда
+StateDirectory=planpoker
+Environment=DATA_DIR=/var/lib/planpoker
+# node:sqlite в Node 22 помечен экспериментальным и пишет предупреждение при старте
+ExecStart=/opt/node/bin/node --disable-warning=ExperimentalWarning /opt/planpoker/index.cjs
 Restart=always
 RestartSec=2
-# Комнаты живут в памяти: 128 МБ хватит на тысячи участников
+# Активные комнаты в памяти, остальные в SQLite: 128 МБ хватит на тысячи участников
 MemoryMax=128M
 NoNewPrivileges=true
 ProtectSystem=strict
