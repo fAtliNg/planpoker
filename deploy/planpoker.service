@@ -1,0 +1,25 @@
+# Сервер комнат PlanPoker. Файл кладётся в /etc/systemd/system/planpoker.service
+[Unit]
+Description=PlanPoker rooms (WebSocket)
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/planpoker
+Environment=NODE_ENV=production
+Environment=PORT=8787
+Environment=HOST=127.0.0.1
+ExecStart=/opt/node/bin/node /opt/planpoker/index.cjs
+Restart=always
+RestartSec=2
+# Комнаты живут в памяти: 128 МБ хватит на тысячи участников
+MemoryMax=128M
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

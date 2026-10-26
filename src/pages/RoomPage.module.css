@@ -1,0 +1,666 @@
+/* Вход и загрузка */
+
+.gate,
+.loading {
+  display: grid;
+  place-items: center;
+  padding-top: clamp(48px, 10vw, 120px);
+}
+
+.gateForm {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  max-width: 440px;
+  padding: clamp(24px, 4vw, 36px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-l);
+  background: var(--bg-raised);
+  box-shadow: var(--shadow-lg);
+}
+
+.gateForm h1 {
+  font-size: var(--step-2);
+}
+
+.gateForm p {
+  color: var(--text-2);
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-2);
+  font-size: var(--step--1);
+  cursor: pointer;
+}
+
+.check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.loading {
+  gap: 16px;
+  color: var(--text-2);
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--surface-strong);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Комната */
+
+.room {
+  padding-top: 24px;
+}
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-bottom: 20px;
+}
+
+.roomTitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.roomTitle h1 {
+  font-size: var(--step-1);
+}
+
+.roomTitle code {
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: var(--surface-strong);
+  font-size: 0.9em;
+}
+
+.status {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--good);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--good) 20%, transparent);
+}
+
+.status[data-status='connecting'] {
+  background: var(--neutral);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--neutral) 20%, transparent);
+}
+
+.status[data-status='offline'] {
+  background: var(--bad);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--bad) 20%, transparent);
+}
+
+.deckPicker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.select {
+  min-height: 36px;
+  padding: 0 32px 0 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  background: var(--bg-raised);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--step--1);
+  cursor: pointer;
+}
+
+.customDeck {
+  display: flex;
+  gap: 8px;
+}
+
+.customDeck :global(.input) {
+  min-height: 36px;
+  width: 200px;
+  border-radius: var(--radius-full);
+  font-size: var(--step--1);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+.main {
+  display: grid;
+  gap: 20px;
+}
+
+.story {
+  display: flex;
+}
+
+.storyInput {
+  width: 100%;
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px dashed var(--border-strong);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--step-2);
+  letter-spacing: -0.02em;
+}
+
+.storyInput::placeholder {
+  color: var(--text-3);
+  font-weight: 600;
+}
+
+.storyInput:focus {
+  outline: none;
+  border-bottom-color: var(--accent);
+}
+
+/* Стол: зелёное сукно в светлой теме, тёмное — в тёмной */
+.table {
+  position: relative;
+  display: grid;
+  gap: 28px;
+  padding: clamp(20px, 4vw, 36px);
+  border-radius: 28px;
+  background:
+    radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),
+    var(--bg-raised);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.players {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px 16px;
+}
+
+.empty {
+  color: var(--text-3);
+}
+
+.player {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: 84px;
+  transition: opacity 0.3s;
+}
+
+.player[data-offline] {
+  opacity: 0.4;
+}
+
+.playerName {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--step--1);
+  font-weight: 500;
+}
+
+.playerName em {
+  color: var(--text-3);
+  font-style: normal;
+}
+
+/* Карта переворачивается при вскрытии */
+.cardSlot {
+  width: 60px;
+  height: 84px;
+  perspective: 600px;
+}
+
+.cardInner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.6s var(--ease-out);
+}
+
+.cardSlot[data-flipped] .cardInner {
+  transform: rotateY(180deg);
+}
+
+.cardBack,
+.cardFace {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  backface-visibility: hidden;
+}
+
+.cardBack {
+  border: 2px dashed var(--border-strong);
+  background: transparent;
+  transition: background 0.3s, border-color 0.3s, transform 0.3s var(--ease-out);
+}
+
+.cardSlot[data-voted] .cardBack {
+  border: 0;
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.14) 0 6px, transparent 6px 12px),
+    var(--gradient);
+  box-shadow: var(--shadow);
+  animation: pop 0.35s var(--ease-out);
+}
+
+@keyframes pop {
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+.cardFace {
+  display: grid;
+  place-items: center;
+  transform: rotateY(180deg);
+  border: 2px solid var(--accent);
+  background: var(--bg-raised);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.6rem;
+}
+
+.center {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.progress {
+  color: var(--text-2);
+}
+
+.progress strong {
+  color: var(--text);
+}
+
+/* Итоги раунда */
+.results {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  width: 100%;
+  animation: rise 0.5s var(--ease-out) both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.consensus {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--step-3);
+}
+
+.metrics {
+  display: flex;
+  gap: clamp(24px, 6vw, 56px);
+}
+
+.metrics div {
+  display: grid;
+  justify-items: center;
+}
+
+.metrics span {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--step-3);
+  line-height: 1.1;
+}
+
+.metrics small {
+  color: var(--text-3);
+  font-size: var(--step--1);
+}
+
+.distribution {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.distribution li {
+  display: grid;
+  grid-template-columns: 40px 1fr 24px;
+  align-items: center;
+  gap: 12px;
+}
+
+.distCard {
+  font-weight: 700;
+  text-align: center;
+}
+
+.distBar {
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: var(--surface-strong);
+  overflow: hidden;
+}
+
+.distBar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--gradient);
+  transform-origin: left;
+  animation: fill 0.7s var(--ease-out) both;
+}
+
+@keyframes fill {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.distCount {
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.timer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.timerLabel {
+  color: var(--text-3);
+  font-size: var(--step--1);
+  margin-right: 4px;
+}
+
+.timerValue {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--step-2);
+  font-variant-numeric: tabular-nums;
+  margin-right: 8px;
+}
+
+.timer[data-urgent] .timerValue {
+  color: var(--bad);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Рука: карты, которые можно выбрать */
+.hand {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 0 16px;
+}
+
+.handCard,
+.handCardActive {
+  width: 56px;
+  height: 80px;
+  border: 2px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--bg-raised);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: transform 0.25s var(--ease-out), border-color 0.2s, box-shadow 0.25s, background-color 0.2s;
+}
+
+.handCard:hover {
+  transform: translateY(-6px);
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+}
+
+.handCardActive {
+  transform: translateY(-12px);
+  border-color: transparent;
+  background: var(--gradient);
+  color: #fff;
+  box-shadow: var(--shadow-lg);
+}
+
+.handCard:disabled,
+.handCardActive:disabled {
+  cursor: default;
+  opacity: 0.5;
+  transform: none;
+}
+
+.spectatorNote {
+  text-align: center;
+  color: var(--text-3);
+}
+
+/* Боковая панель */
+.side {
+  display: grid;
+  gap: 16px;
+  position: sticky;
+  top: 88px;
+}
+
+.sideBlock {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-l);
+  background: var(--bg-raised);
+}
+
+.sideBlock h2 {
+  font-size: var(--step-0);
+  margin-bottom: 14px;
+}
+
+.people {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.people li {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.people li[data-offline] {
+  opacity: 0.45;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: var(--step--1);
+}
+
+.personName {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.badge,
+.badgeMuted {
+  padding: 1px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--step--2);
+  font-weight: 600;
+}
+
+.badge {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.badgeMuted {
+  background: var(--surface-strong);
+  color: var(--text-2);
+}
+
+.voteMark {
+  color: var(--text-3);
+  font-weight: 700;
+}
+
+.voteMark[data-voted] {
+  color: var(--good);
+}
+
+.rename :global(.input) {
+  min-height: 34px;
+  padding: 0 10px;
+}
+
+.linkBtn {
+  grid-column: 2 / -1;
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-3);
+  font-size: var(--step--2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.linkBtn:hover {
+  color: var(--accent);
+}
+
+.meActions {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.history li {
+  display: grid;
+  gap: 2px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.history li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.historyStory {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.historySummary {
+  color: var(--accent);
+  font-size: var(--step--1);
+  font-weight: 600;
+}
+
+.historyVotes {
+  color: var(--text-3);
+  font-size: var(--step--2);
+}
+
+@media (max-width: 960px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .side {
+    position: static;
+  }
+}
+
+@media (max-width: 480px) {
+  .storyInput {
+    font-size: var(--step-1);
+  }
+
+  .player {
+    width: 72px;
+  }
+
+  .handCard,
+  .handCardActive {
+    width: 48px;
+    height: 68px;
+    font-size: 1.1rem;
+  }
+}

@@ -1,0 +1,26 @@
+.shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow-x: clip;
+}
+
+/* Мягкое цветное свечение сверху страницы */
+.glow {
+  position: absolute;
+  inset: -240px 0 auto;
+  height: 720px;
+  background:
+    radial-gradient(40% 50% at 20% 40%, rgba(16, 185, 129, 0.16), transparent 70%),
+    radial-gradient(35% 45% at 80% 30%, rgba(245, 158, 11, 0.1), transparent 70%);
+  filter: blur(20px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.main {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+}
